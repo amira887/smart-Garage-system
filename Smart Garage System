@@ -1,0 +1,150 @@
+#include <LiquidCrystal.h>
+#include <Servo.h>
+Servo myservo;
+#define Led1 3
+#define Ldr A4
+#define buzzer 4
+#define flame A0
+#define red 13
+#define ir1 A1
+#define ir2 A2
+#define Led2 5
+#define Led3 11
+int x=0;
+int y=0;
+int slot=5;
+int brightnes;
+int r=0;
+int contrast=100;
+LiquidCrystal lcd(12,A5,9,8,7,6);
+int time1;
+void setup(){
+  Serial.begin(9600);
+  pinMode (Led1, OUTPUT);
+pinMode (Led2, OUTPUT);
+pinMode (Led3, OUTPUT);
+  pinMode (Ldr, INPUT);
+  pinMode (buzzer,OUTPUT);
+  pinMode (flame,INPUT);
+  pinMode (red,OUTPUT);
+  pinMode (ir1,INPUT);
+  pinMode (ir2,INPUT);
+  analogWrite(A3,contrast);
+  myservo.attach(10);
+  for(int i =0 ; i<=70 ; i=i+10){
+      myservo.write(i);
+      delay(100);}
+  lcd.begin(16,2);
+lcd.setCursor(6,0);
+  lcd.print("Parking");
+  lcd.setCursor(7,1);
+  lcd.print("Area");
+  delay(2000);
+  lcd.clear();
+  delay(1000);
+}
+void loop(){
+  int brightnes = analogRead(Ldr);
+Serial.println(brightnes);
+  int value= map(brightnes,54,912,0,1023);
+  analogWrite(Led1,value);
+  analogWrite(Led2,value);
+  analogWrite(Led3,value);
+  int T=digitalRead(flame);
+  if(T==1){
+    digitalWrite(red,HIGH);
+    digitalWrite(buzzer,HIGH);
+    delay(1000);
+    digitalWrite(buzzer,LOW);
+    delay(1000);
+    T=digitalRead(flame);
+  }
+  else if (T==0) {
+    digitalWrite(red,LOW);
+    digitalWrite(buzzer,LOW);
+  }
+T=digitalRead(flame);
+  int M=digitalRead(ir1);
+  int N=digitalRead(ir2);
+  if (digitalRead(ir1)==0 && x==0){
+    if(slot>0){
+    x=1;
+      if(y==0){
+        for(int i =70 ; i>=0 ; i=i-10){
+          myservo.write(i);
+          delay(100);
+          time1=millis();
+        }
+      }
+    }
+    else if (y==0){
+       lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Sorry No Space");
+      lcd.setCursor(0,1);
+      lcd.print("Available");
+      delay(1000);
+      lcd.clear();
+    } 
+      else if (y==1){
+        for(int i =0 ; i<=70 ; i=i+10){//close the gate
+          myservo.write(i);
+          delay(100);
+      }
+        slot= slot +1;
+        y=0;
+      }
+    }
+  if(digitalRead(ir2)==0 &&y==0){
+    if(x==0){
+      if(slot<5){
+        y=1;
+        for(int i =70 ; i>=0 ; i=i-10){
+          myservo.write(i);
+          delay(100);
+        }
+      }
+     }  
+      else if (slot==5 && x==1){
+         for(int i =0 ; i<=70 ; i=i+10){
+      myservo.write(i);
+      delay(100);}
+       slot=slot-1;
+       x=0;
+       } else if (slot<5 && x==1){
+          for(int i =0 ; i<=70 ; i=i+10){
+      myservo.write(i);
+      delay(100);}
+       slot=slot-1;
+       x=0;
+       } 
+      }
+       if (time1>3000 && N==1 && M==1 && y==0 && x==1 ){
+        digitalWrite(buzzer,HIGH);
+        delay(1000);
+         for(int i =0 ; i<=70 ; i=i+10){
+            myservo.write(i);
+             delay(100);
+             }
+        x=0;
+       }
+      if(x==1&&y==1){delay(3000);
+      for(int i =0 ; i<=70 ; i=i+10){
+      myservo.write(i);
+      delay(100);}
+      if(N==0&&M==1 && slot>0){
+        slot=slot-1;
+      }
+      if(M==0&&N==1&&slot<5){
+        slot=slot+1;
+      }
+      x=0;
+      y=0;
+      }  
+       lcd.setCursor(0,0);
+    lcd.print("spaces:");
+    lcd.print( "5" );
+  lcd.setCursor(0,1); 
+    lcd.print("valid spaces:");
+    lcd.print(slot); 
+}
